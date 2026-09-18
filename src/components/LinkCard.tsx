@@ -2,11 +2,24 @@
 
 import type { LinkItem } from "@/lib/profile";
 
-export function LinkCard({ link }: { link: LinkItem }) {
+interface LinkCardProps {
+  link: LinkItem;
+  count: number;
+  onClicked: (id: string, count: number) => void;
+}
+
+export function LinkCard({ link, count, onClicked }: LinkCardProps) {
   const recordClick = () => {
-    fetch(`/api/links/${link.id}/click`, { method: "POST" }).catch(() => {
-      // 클릭 집계 실패는 사용자 이동을 막지 않는다.
-    });
+    fetch(`/api/links/${link.id}/click`, { method: "POST" })
+      .then((res) => res.json())
+      .then((data: { ok?: boolean; count?: number }) => {
+        if (data.ok && typeof data.count === "number") {
+          onClicked(link.id, data.count);
+        }
+      })
+      .catch(() => {
+        // 클릭 집계 실패는 사용자 이동을 막지 않는다.
+      });
   };
 
   return (
@@ -15,7 +28,7 @@ export function LinkCard({ link }: { link: LinkItem }) {
       target="_blank"
       rel="noopener noreferrer"
       onClick={recordClick}
-      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/70 px-5 py-4 text-base font-semibold text-slate-800 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:bg-sky-500 hover:text-white hover:shadow-lg"
+      className="group flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white/70 px-5 py-4 text-base font-semibold text-slate-800 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:bg-sky-500 hover:text-white hover:shadow-lg"
     >
       <svg
         viewBox="0 0 24 24"
@@ -25,7 +38,10 @@ export function LinkCard({ link }: { link: LinkItem }) {
       >
         <path d={link.iconPath} />
       </svg>
-      {link.label}
+      <span className="flex-1 text-center">{link.label}</span>
+      <span className="shrink-0 text-xs font-normal text-slate-400 transition-colors group-hover:text-sky-100">
+        {count}회
+      </span>
     </a>
   );
 }

@@ -1,11 +1,11 @@
-import { MongoClient } from "mongodb";
+import { MongoClient, type Db } from "mongodb";
 
 declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
 // 서버리스 환경에서 warm invocation 간에 커넥션을 재사용하기 위해 전역에 캐시한다.
-export function getMongoClientPromise(): Promise<MongoClient> {
+function getMongoClientPromise(): Promise<MongoClient> {
   if (!global._mongoClientPromise) {
     const uri = process.env.MONGODB_URI;
 
@@ -18,4 +18,15 @@ export function getMongoClientPromise(): Promise<MongoClient> {
   }
 
   return global._mongoClientPromise;
+}
+
+export async function getMongoDb(): Promise<Db> {
+  const dbName = process.env.MONGODB_NAME;
+
+  if (!dbName) {
+    throw new Error("MONGODB_NAME 환경 변수가 설정되지 않았습니다. .env.local을 확인하세요.");
+  }
+
+  const client = await getMongoClientPromise();
+  return client.db(dbName);
 }
